@@ -43,25 +43,26 @@ class  Anapico(Instrument):
     def __init__(self, address):
 
         super(Anapico, self).__init__(address)
-        self._instR.write('UNIT:POW V')
-        if int(self._instR.ask(':OUTP:STAT?')):
-            self._instR.write(':sour:pow:lev:imm:ampl 0.001')
-            self._instR.write(':OUTP:STAT ON')
+        self._instR.write("UNIT:POW V\n")
+        if not(int(self._instR.ask("OUTP:STAT?\n")):
+            self._instR.write(':sour:pow:lev:imm:ampl 0.001\')
+            self._instR.write(':OUTP:STAT ON\')
 
 
     def rampV(self, setV, rampN = 200,ps = 0.05):
 
         if setV == 0:
             setV = 1
-        outV     = float(self._instR.ask(':sour:pow:lev?')) * 1000 #in miliVolts
+        outV     = float(self._instR.ask(':sour:pow:lev?\n')) * 1000 #in miliVolts
         rampStep = (outV - setV)/rampN
         if rampStep == 0:
             print('Already at set voltage')
         for i in range(rampStep):
             increment = (outV - i*rampStep) / 1000
-            self._instR.write(":sour:pow:lev:imm:ampl {0:.8f}".format(increment))
+            self._instR.write(":sour:pow:lev:imm:ampl {0:.8f}\n".format(increment))
 
 
     def setFreq(self, freq, phs = 0):
 
-        self._instR.write('FREQ {0:.8f}'.format(freq))
+        self._instR.write('FREQ {0:.8f}e6\n'.format(freq))
+        self._instR.write('SOUR:PHAS {0:.8f}\n'.format(phs))
