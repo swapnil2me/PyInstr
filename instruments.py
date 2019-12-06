@@ -1,4 +1,5 @@
 import vxi11
+import pyvisa
 import time
 
 class Instrument:
@@ -66,3 +67,30 @@ class  Anapico(Instrument):
 
         self._instR.write('FREQ {0:.8f}e6\n'.format(freq))
         self._instR.write('SOUR:PHAS {0:.8f}\n'.format(phs))
+
+class SRS830():
+    """docstring for SRS830."""
+
+    def __init__(self, address):
+
+        rm = pyvisa.ResourceManager()
+        self.address = address
+        self._instR = rm.open_resource('GPIB0::'+str(address)+'::INSTR')
+
+    def checkStatus(self):
+        ovldI = self._instR.query('lias?0\n')
+        ovldTC = self._instR.query('lias?1\n')
+        ovldOP = self._instR.query('lias?2\n')
+        return ovldI, ovldOP, ovldTC
+
+    def unlocked(self):
+        return int(self._instR.query('lias?3\n')) == 1
+
+    def readLIA(self, waitFor):
+        status_=list(map(int,self.checkStatus))
+        while not(all(status_)):
+            print('Check Instrument for overload')
+        while self.unlocked():
+            self._instR.write('SENS' + str(int(self._instR.query('SENS ?')) + 1))
+        return [A,P] = list(map(float,(inst.query('SNAP?3, 4').split(','))))
+        
