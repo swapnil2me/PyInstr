@@ -9,7 +9,8 @@ class Instrument:
         self.address = address
         self._instR = vxi11.Instrument(address,'inst0')
 
-    def rampV(self,askStr,writeStr)
+    def rampV(self,askStr,writeStr):
+        pass
 
 
 class Sma100A(Instrument):
