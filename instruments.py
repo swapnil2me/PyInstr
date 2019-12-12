@@ -130,11 +130,11 @@ class SRS830(Instrument):
         while self.checkStatus():
             print('Check Instrument for overload')
             time.sleep(self.waitFor/1000)
-        print('Overload Resolved')
+        #print('Overload Resolved')
         while self.unlocked():
             print('Reference is unlocked')
             time.sleep(self.waitFor/1000)
-        print('Locked to the reference')
+        #print('Locked to the reference')
         while self.outputOverload():
             self.sensitivity = self.sensitivity + 1
             time.sleep(self.waitFor/1000)
