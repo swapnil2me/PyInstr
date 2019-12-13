@@ -17,7 +17,7 @@ class MixdownFreqSweep():
         self.bkwSweep = bkwSweep
 
 
-    def runFreqSweep(self):
+    def runSweep(self):
 
         try:
             dataFile_name = ['{}V_VgDC_{}mV_VgAC_{}mV_VsAC_{}MHz_{}MHz_FWD.csv'.format(
@@ -60,5 +60,13 @@ class VoltageSweep(MixdownFreqSweep):
         MixdownFreqSweep.__init__(self, dataLocation, vgInstr, vsInstr, liaInstr,
                      sf, ef, df, mx, bkwSweep = False)
 
-    def runVoltageSweep(self):
-        pass
+    def runSweep(self):
+        for i in np.arange(self.start, self.end, self.tep):
+            self.rampVolt(i)
+            self.child.runSweep()
+    
+    def addChild(self, child = 'default'):
+        if child != default:
+            self.child = child()
+        else:
+            self.child = MixdownFreqSweep()
