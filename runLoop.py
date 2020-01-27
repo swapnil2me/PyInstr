@@ -25,11 +25,11 @@ for i in range(20):
     #plt.plot(i, P, 'ko')
     #plt.pause(0.000000001)
 
-plt.show()
+
 vsAC.rampV(0.001)
 vgAC.rampV(0.001)
 
 vsAC.close()
 vgAC.close()
 liA.close()
-
+plt.show()
