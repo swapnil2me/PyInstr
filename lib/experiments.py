@@ -114,7 +114,7 @@ class VoltageSweep(MixdownFreqSweep):
         print('')
         print('Ramping down the instruments')
         for i in range(len(self.instrList)):
-            self.instrList[i].rampV(0)
+            self.instrList[i].rampDown()
 
 
     def closeAll(self):
@@ -149,6 +149,7 @@ class DispersionSweep(VoltageSweep):
         vgAC.voltageSweepRange = [paramDict['vgAC']['volt'],1.,paramDict['vgAC']['volt']]
         vgDC.voltageSweepRange = paramDict['vgDC']['sweepVolt']
         vsAC.freqSweepRange = paramDict['vsAC']['freqRange']
+        vgAC.freqSweepRange = paramDict['vsAC']['freqRange']
 
         dataLocation = paramDict['dataDir']
         mx = paramDict['vsAC']['mixDownFreq']

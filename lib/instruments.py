@@ -63,7 +63,6 @@ class Instrument:
 
 
     def rampV(self, setV, rampN = 200,ps = 0.05):
-        print('Ramping {0} to {1} {2} in {3} steps'.format(self.name, setV, self.unit, rampN))
         if setV == 0.0:
             setV = 1.0
         outV     = float(self._instR.ask(':sour:pow:lev?')) * 1000 #in miliVolts
@@ -71,6 +70,7 @@ class Instrument:
         if rampStep == 0.0:
             print('{0} at {1} {2}'.format(self.name, setV, self.unit))
             return
+        print('Ramping {0} to {1} {2} in {3} steps'.format(self.name, setV, self.unit, rampN))
         for i in range(rampN+1):
             increment = (outV - i*rampStep) / 1000 # in Volts
             self._instR.write(":pow {0:.8f}".format(increment))
@@ -110,7 +110,6 @@ class  Anapico(Instrument):
 
 
     def rampV(self, setV, rampN = 200,ps = 0.05):
-        print('Ramping {0} to {1} {2} in {3} steps'.format(self.name, setV, self.unit, rampN))
         if setV == 0:
             setV = 1
         outV = float(self._instR.ask(':sour:pow:lev?\n')) * 1000 #in miliVolts
@@ -118,6 +117,7 @@ class  Anapico(Instrument):
         if rampStep == 0.0:
             print('{0} at {1} {2}'.format(self.name, setV, self.unit))
             return
+        print('Ramping {0} to {1} {2} in {3} steps'.format(self.name, setV, self.unit, rampN))
         for i in range(rampN+1):
             increment = (outV - i*rampStep) / 1000 # in Volts
             self._instR.write(":sour:pow:lev:imm:ampl {0:.8f}\n".format(increment))
@@ -215,12 +215,12 @@ class SRS830(Instrument):
         assert self.auxOutPort != None, 'Output aux port not defined'
         auxOutPort = self.auxOutPort
         #print('Using Aux Port {}'.format(auxOutPort))
-        print('Ramping {0} to {1} {2} in {3} steps'.format(self.name, setV, self.unit, rampN))
         outV = float(self._instR.query('AUXV?{}\n'.format(auxOutPort))) #in Volts
         rampStep = (outV - setV)/float(rampN)
         if rampStep == 0.0:
             print('{0} at {1} {2}'.format(self.name, setV, self.unit))
             return
+        print('Ramping {0} to {1} {2} in {3} steps'.format(self.name, setV, self.unit, rampN))
         for i in range(1,rampN+1):
             increment = (outV - i*rampStep) # in Volts
             self._instR.write("AUXV{0:d},{1:.8f}\n".format(auxOutPort,increment))
