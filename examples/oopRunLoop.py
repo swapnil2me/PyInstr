@@ -42,5 +42,5 @@ except:
 vsAC.rampDown()
 vgAC.rampDown()
 vsAC.close()
-vsAC.close()
-vsAC.close()
+vgAC.close()
+liA.close()

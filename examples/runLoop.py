@@ -1,3 +1,6 @@
+import sys
+import os
+sys.path.append(os.path.join(os.getcwd(),'lib'))
 import matplotlib.pyplot as plt
 import instruments as ins
 

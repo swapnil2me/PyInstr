@@ -1,0 +1,7 @@
+
+*.pyc
+*.h
+*.hpp
+*.def
+*.d
+/vene/*

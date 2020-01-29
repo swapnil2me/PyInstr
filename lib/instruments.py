@@ -1,6 +1,7 @@
 import vxi11
 import pyvisa
 import time
+from math import isclose
 
 class Instrument:
 
@@ -62,19 +63,22 @@ class Instrument:
 
 
     def rampV(self, setV, rampN = 200,ps = 0.05):
+        print('Ramping {0} to {1} {2} in {3} steps'.format(self.name, setV, self.unit, rampN))
         if setV == 0.0:
             setV = 1.0
         outV     = float(self._instR.ask(':sour:pow:lev?')) * 1000 #in miliVolts
         rampStep = (outV - setV)/rampN
         if rampStep == 0.0:
             print('Already at set voltage')
-        for i in range(rampN):
+            return
+        for i in range(rampN+1):
             increment = (outV - i*rampStep) / 1000 # in Volts
             self._instR.write(":pow {0:.8f}".format(increment))
+            time.sleep(ps)
 
 
-    def rampDown(self):
-        self.rampV(0)
+    def rampDown(self,rampN = 200,ps = 0.05):
+        self.rampV(0,rampN,ps)
 
 
     def setFreq(self, freq, phs = 0):
@@ -106,15 +110,18 @@ class  Anapico(Instrument):
 
 
     def rampV(self, setV, rampN = 200,ps = 0.05):
+        print('Ramping {0} to {1} {2} in {3} steps'.format(self.name, setV, self.unit, rampN))
         if setV == 0:
             setV = 1
         outV = float(self._instR.ask(':sour:pow:lev?\n')) * 1000 #in miliVolts
         rampStep = (outV - setV)/rampN
-        if rampStep == 0:
+        if rampStep == 0.0:
             print('Already at set voltage')
-        for i in range(rampN):
+            return
+        for i in range(rampN+1):
             increment = (outV - i*rampStep) / 1000 # in Volts
             self._instR.write(":sour:pow:lev:imm:ampl {0:.8f}\n".format(increment))
+            time.sleep(ps)
 
 
     def setFreq(self, freq, phs = 0):
@@ -125,12 +132,17 @@ class  Anapico(Instrument):
 class SRS830(Instrument):
     """docstring for SRS830."""
 
-    def __init__(self, address, waitFor):
+    def __init__(self, address, waitFor=300, auxOutPort=None):
         rm = pyvisa.ResourceManager()
-        self.address = address
+        self.address = int(address)
         self.waitFor = waitFor
         self._instR = rm.open_resource('GPIB0::'+str(address)+'::INSTR')
-        self.auxOutPort = None
+        self.auxOutPort = auxOutPort
+        self.name = 'LIA'
+        self.unit = 'Volts'
+        self._voltageSweepRange = 'NA'
+        self._freqSweepRange = 'NA'
+        self.freqOffSet = 'NA'
 
 
     def checkStatus(self):
@@ -181,3 +193,41 @@ class SRS830(Instrument):
             time.sleep(self.waitFor/1000)
         time.sleep(self.waitFor/1000)
         return list(map(float,(self._instR.query('SNAP?3, 4').split(','))))
+
+
+    def askVolt(self):
+        assert self.auxOutPort != None, 'Output aux port not defined'
+        auxOutPort = self.auxOutPort
+        return float(self._instR.query('AUXV?{}\n'.format(auxOutPort))) #in Volts
+
+
+    def rampV(self, setV, rampN = 200,ps = 0.05):
+        """
+        setV is in Volts
+        """
+        assert self.auxOutPort != None, 'Output aux port not defined'
+        auxOutPort = self.auxOutPort
+        print('Using Aux Port {}'.format(auxOutPort))
+        print('Ramping {0} to {1} {2} in {3} steps'.format(self.name, setV, self.unit, rampN))
+        outV = float(self._instR.query('AUXV?{}\n'.format(auxOutPort))) #in Volts
+        rampStep = (outV - setV)/float(rampN)
+        if rampStep == 0.0:
+            print('Already at set voltage')
+            return
+        for i in range(1,rampN+1):
+            increment = (outV - i*rampStep) # in Volts
+            self._instR.write("AUXV{0:d},{1:.8f}\n".format(auxOutPort,increment))
+            time.sleep(ps)
+        outV = float(self._instR.query('AUXV?{}\n'.format(auxOutPort))) #in Volts
+        if isclose(outV, setV, rel_tol = 1e-4):
+            print('Correcting Output')
+            self._instR.write("AUXV{0:d},{1:.8f}\n".format(auxOutPort,setV))
+        else:
+            print(outV, setV)
+            print('Actual output is off by 1e-4 mV')
+
+
+    def rampDown(self,rampN = 200,ps = 0.05):
+        assert self.auxOutPort != None, 'Output aux port not defined'
+        auxOutPort = self.auxOutPort
+        self.rampV(0,rampN,ps)

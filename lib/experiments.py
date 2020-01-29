@@ -1,6 +1,7 @@
 import numpy as np
 import os
 from math import isclose
+import instruments as inst
 
 
 class MixdownFreqSweep():
@@ -80,11 +81,11 @@ class VoltageSweep(MixdownFreqSweep):
 
     def setExperiment(self):
         voltage_ranges = [i.voltageSweepRange for i in self.instrList]
+        print(voltage_ranges)
         assert None not in voltage_ranges, "Please set voltage_ranges for all instrs"
-        if self.instrList[0].askVolt() != self.instrList[0].voltageSweepRange[0]:
-            self.instrList[0].rampV(self.instrList[0].voltageSweepRange[0])
-        if self.instrList[1].askVolt() != self.instrList[1].voltageSweepRange[0]:
-            self.instrList[1].rampV(self.instrList[1].voltageSweepRange[0])
+        for i in range(len(self.instrList)):
+            if self.instrList[i].askVolt() != voltage_ranges[i][0]:
+                self.instrList[i].rampV(voltage_ranges[i][0])
 
 
     def generateSweepSpace(self):
@@ -105,4 +106,51 @@ class VoltageSweep(MixdownFreqSweep):
             self.runSweep()
 
 
-#class SweepLoop():
+    def rampDownAll(self):
+        for i in range(len(self.instrList)):
+            self.instrList[i].rampV(0)
+
+
+    def closeAll(self):
+        for i in range(len(self.instrList)):
+            self.instrList[i].rampV(0)
+            self.instrList[i].close()
+
+
+class DispersionSweep(VoltageSweep):
+
+    def __init__(self, paramDict):
+        vsAC = getattr(inst, paramDict['vsAC']['instClass'])(paramDict['vsAC']['address'])
+        vgAC = getattr(inst, paramDict['vgAC']['instClass'])(paramDict['vgAC']['address'])
+        vgDC = getattr(inst, paramDict['vgDC']['instClass'])(paramDict['vgDC']['address'])
+        liA  = getattr(inst, paramDict['LIA']['instClass'])(paramDict['LIA']['address'],
+                                                            paramDict['LIA']['timeConstant'])
+        if 'SRS' in paramDict['vgDC']['instClass']:
+            print('Using LIA for vgDC')
+            vgDC.waitFor = paramDict['LIA']['timeConstant']
+            vgDC.auxOutPort = paramDict['vgDC']['auxOutPort']
+
+        vsAC.name = 'VsAC'
+        vgAC.name = 'VgAC'
+        vgDC.name = 'VgDC'
+        vsAC.unit = 'mV'
+        vgAC.unit = 'mV'
+        vgDC.unit = 'V'
+
+        vsAC.voltageSweepRange = [paramDict['vsAC']['volt'],1.,paramDict['vsAC']['volt']]
+        vgAC.voltageSweepRange = [paramDict['vgAC']['volt'],1.,paramDict['vgAC']['volt']]
+        vgDC.voltageSweepRange = paramDict['vgDC']['sweepVolt']
+        vsAC.freqSweepRange = paramDict['vsAC']['freqRange']
+
+        dataLocation = paramDict['dataDir']
+        mx = paramDict['vsAC']['mixDownFreq']
+        VoltageSweep.__init__(self,dataLocation, [vsAC,vgAC,vgDC], liA, mx)
+        print('Printing Dispersion Summary')
+        self.sweepSummary()
+
+    def runDispersion(self):
+        self.setExperiment()
+        print('Running Sweep')
+        self.runVtgSweep()
+        print('Dispersion Finished')
+        self.rampDownAll()
