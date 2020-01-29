@@ -69,7 +69,7 @@ class Instrument:
         outV     = float(self._instR.ask(':sour:pow:lev?')) * 1000 #in miliVolts
         rampStep = (outV - setV)/rampN
         if rampStep == 0.0:
-            print('Already at set voltage')
+            print('{0} at {1} {2}'.format(self.name, setV, self.unit))
             return
         for i in range(rampN+1):
             increment = (outV - i*rampStep) / 1000 # in Volts
@@ -116,7 +116,7 @@ class  Anapico(Instrument):
         outV = float(self._instR.ask(':sour:pow:lev?\n')) * 1000 #in miliVolts
         rampStep = (outV - setV)/rampN
         if rampStep == 0.0:
-            print('Already at set voltage')
+            print('{0} at {1} {2}'.format(self.name, setV, self.unit))
             return
         for i in range(rampN+1):
             increment = (outV - i*rampStep) / 1000 # in Volts
@@ -180,13 +180,20 @@ class SRS830(Instrument):
 
 
     def readLIA(self):
+        start_time = time.time()
         while self.checkStatus():
-            print('Check Instrument for overload')
             time.sleep(self.waitFor/1000)
+            elapsed_time1 = time.time() - start_time
+            if elapsed_time1 > 5:
+                print('Check Instrument for overload')
+                print('')
         #print('Overload Resolved')
         while self.unlocked():
-            print('Reference is unlocked')
             time.sleep(self.waitFor/1000)
+            elapsed_time2 = time.time() - start_time
+            if elapsed_time2 > 20:
+                print('Reference is unlocked, please check reference input')
+                print('')
         #print('Locked to the reference')
         while self.outputOverload():
             self.sensitivity = self.sensitivity + 1
@@ -207,24 +214,24 @@ class SRS830(Instrument):
         """
         assert self.auxOutPort != None, 'Output aux port not defined'
         auxOutPort = self.auxOutPort
-        print('Using Aux Port {}'.format(auxOutPort))
+        #print('Using Aux Port {}'.format(auxOutPort))
         print('Ramping {0} to {1} {2} in {3} steps'.format(self.name, setV, self.unit, rampN))
         outV = float(self._instR.query('AUXV?{}\n'.format(auxOutPort))) #in Volts
         rampStep = (outV - setV)/float(rampN)
         if rampStep == 0.0:
-            print('Already at set voltage')
+            print('{0} at {1} {2}'.format(self.name, setV, self.unit))
             return
         for i in range(1,rampN+1):
             increment = (outV - i*rampStep) # in Volts
             self._instR.write("AUXV{0:d},{1:.8f}\n".format(auxOutPort,increment))
             time.sleep(ps)
         outV = float(self._instR.query('AUXV?{}\n'.format(auxOutPort))) #in Volts
-        if isclose(outV, setV, rel_tol = 1e-4):
+        if isclose(outV, setV, rel_tol = 1e-3):
             print('Correcting Output')
             self._instR.write("AUXV{0:d},{1:.8f}\n".format(auxOutPort,setV))
         else:
             print(outV, setV)
-            print('Actual output is off by 1e-4 mV')
+            print('Actual output is off by 1e-3 V')
 
 
     def rampDown(self,rampN = 200,ps = 0.05):

@@ -9,14 +9,14 @@ paramDict = {'vsAC':{'instClass':'Anapico',
                      'address': '169.254.7.87',
                      'volt':300,
                      'mixDownFreq':1987,
-                     'freqRange':[50.0,0.5,52]},
+                     'freqRange':[50.0,0.5,51]},
              'vgAC':{'instClass':'Anapico',
                      'address': '169.254.7.42',
                      'volt':300},
              'vgDC':{'instClass':'SRS830',
                      'address':'8',
                      'auxOutPort':1,
-                     'sweepVolt':[-2.0,1.0,2]},
+                     'sweepVolt':[0.0,2.0,2.0]},
              'LIA':{'instClass':'SRS830',
                      'address':'8',
                      'timeConstant':300},
@@ -31,3 +31,6 @@ except:
 
 
 dispersion.closeAll()
+print('------------------------------------------------------------------')
+print('Experiment Clossed')
+print('------------------------------------------------------------------')

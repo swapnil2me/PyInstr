@@ -70,18 +70,20 @@ class VoltageSweep(MixdownFreqSweep):
 
 
     def sweepSummary(self):
-        print('ID     | Name | Unit | Voltage Range  | Freq Range  | Freq Offset')
+        print('------------------------------------------------------------------')
+        print('The Mixdown Voltage Sweep Summary')
+        print('ID     | Name | Unit | Voltage Range  | Freq Range     | Freq Offset')
         for i in range(len(self.instrList)):
             print('Instr ' + str(i) + ': '+str(self.instrList[i].name)
-                                    + ': '+str(self.instrList[i].unit)
-                                    + ': '+str(self.instrList[i].voltageSweepRange)
-                                    + ': '+str(self.instrList[i].freqSweepRange)
-                                    + ': '+str(self.instrList[i].freqOffSet))
+                                    + ' | '+str(self.instrList[i].unit)
+                                    + '   | '+str(self.instrList[i].voltageSweepRange)
+                                    + '| '+str(self.instrList[i].freqSweepRange)
+                                    + '| '+str(self.instrList[i].freqOffSet))
+        print('------------------------------------------------------------------')
 
 
     def setExperiment(self):
         voltage_ranges = [i.voltageSweepRange for i in self.instrList]
-        print(voltage_ranges)
         assert None not in voltage_ranges, "Please set voltage_ranges for all instrs"
         for i in range(len(self.instrList)):
             if self.instrList[i].askVolt() != voltage_ranges[i][0]:
@@ -101,12 +103,17 @@ class VoltageSweep(MixdownFreqSweep):
     def runVtgSweep(self):
         sweepSpace = self.generateSweepSpace()
         for i in sweepSpace:
+            print('------------------------------------------------------------------')
+            print('Starting frequency sweep:')
             for j in range(len(self.instrList)):
                 self.instrList[j].rampV(i[j])
             self.runSweep()
+            print('------------------------------------------------------------------')
 
 
     def rampDownAll(self):
+        print('------------------------------------------------------------------')
+        print('Ramping down the instruments')
         for i in range(len(self.instrList)):
             self.instrList[i].rampV(0)
 
@@ -126,6 +133,7 @@ class DispersionSweep(VoltageSweep):
         liA  = getattr(inst, paramDict['LIA']['instClass'])(paramDict['LIA']['address'],
                                                             paramDict['LIA']['timeConstant'])
         if 'SRS' in paramDict['vgDC']['instClass']:
+            print('------------------------------------------------------------------')
             print('Using LIA for vgDC')
             vgDC.waitFor = paramDict['LIA']['timeConstant']
             vgDC.auxOutPort = paramDict['vgDC']['auxOutPort']
@@ -145,12 +153,13 @@ class DispersionSweep(VoltageSweep):
         dataLocation = paramDict['dataDir']
         mx = paramDict['vsAC']['mixDownFreq']
         VoltageSweep.__init__(self,dataLocation, [vsAC,vgAC,vgDC], liA, mx)
-        print('Printing Dispersion Summary')
         self.sweepSummary()
 
     def runDispersion(self):
         self.setExperiment()
+        print('------------------------------------------------------------------')
         print('Running Sweep')
         self.runVtgSweep()
         print('Dispersion Finished')
+        print('------------------------------------------------------------------')
         self.rampDownAll()
