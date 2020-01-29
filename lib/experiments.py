@@ -49,7 +49,7 @@ class MixdownFreqSweep():
             print(arrtErr)
             print('Error Occured')
             for i in range(len(self.instrList)):
-                self.instrList[i].rampV(0.001)
+                self.instrList[i].rampDown()
                 self.instrList[i].close()
             self.liaInstr.close()
             print('instruments closed')
@@ -70,7 +70,7 @@ class VoltageSweep(MixdownFreqSweep):
 
 
     def sweepSummary(self):
-        print('------------------------------------------------------------------')
+        print('')
         print('The Mixdown Voltage Sweep Summary')
         print('ID     | Name | Unit | Voltage Range  | Freq Range     | Freq Offset')
         for i in range(len(self.instrList)):
@@ -79,7 +79,7 @@ class VoltageSweep(MixdownFreqSweep):
                                     + '   | '+str(self.instrList[i].voltageSweepRange)
                                     + '| '+str(self.instrList[i].freqSweepRange)
                                     + '| '+str(self.instrList[i].freqOffSet))
-        print('------------------------------------------------------------------')
+        print('')
 
 
     def setExperiment(self):
@@ -103,16 +103,15 @@ class VoltageSweep(MixdownFreqSweep):
     def runVtgSweep(self):
         sweepSpace = self.generateSweepSpace()
         for i in sweepSpace:
-            print('------------------------------------------------------------------')
+            print('')
             print('Starting frequency sweep:')
             for j in range(len(self.instrList)):
-                self.instrList[j].rampV(i[j])
+                self.instrList[j].rampV(i[j],10)
             self.runSweep()
-            print('------------------------------------------------------------------')
 
 
     def rampDownAll(self):
-        print('------------------------------------------------------------------')
+        print('')
         print('Ramping down the instruments')
         for i in range(len(self.instrList)):
             self.instrList[i].rampV(0)
@@ -133,8 +132,9 @@ class DispersionSweep(VoltageSweep):
         liA  = getattr(inst, paramDict['LIA']['instClass'])(paramDict['LIA']['address'],
                                                             paramDict['LIA']['timeConstant'])
         if 'SRS' in paramDict['vgDC']['instClass']:
-            print('------------------------------------------------------------------')
-            print('Using LIA for vgDC')
+            print('')
+            print('Using AUX OUT #{0} of {1} for vgDC'.format(paramDict['vgDC']['auxOutPort'],
+                                                               paramDict['vgDC']['instClass']))
             vgDC.waitFor = paramDict['LIA']['timeConstant']
             vgDC.auxOutPort = paramDict['vgDC']['auxOutPort']
 
@@ -157,9 +157,9 @@ class DispersionSweep(VoltageSweep):
 
     def runDispersion(self):
         self.setExperiment()
-        print('------------------------------------------------------------------')
+        print('')
         print('Running Sweep')
         self.runVtgSweep()
+        print('')
         print('Dispersion Finished')
-        print('------------------------------------------------------------------')
         self.rampDownAll()

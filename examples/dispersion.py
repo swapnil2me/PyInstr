@@ -31,6 +31,6 @@ except:
 
 
 dispersion.closeAll()
-print('------------------------------------------------------------------')
-print('Experiment Clossed')
-print('------------------------------------------------------------------')
+print('')
+print('Experiment Closed')
+print('-----------------')

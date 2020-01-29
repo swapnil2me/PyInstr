@@ -78,7 +78,7 @@ class Instrument:
 
 
     def rampDown(self,rampN = 200,ps = 0.05):
-        self.rampV(0,rampN,ps)
+        self.rampV(1,rampN,ps)
 
 
     def setFreq(self, freq, phs = 0):
