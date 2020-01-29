@@ -78,7 +78,7 @@ class Instrument:
 
 
     def rampDown(self,rampN = 200,ps = 0.05):
-        self.rampV(1,rampN,ps)
+        self.rampV(1,10,ps)
 
 
     def setFreq(self, freq, phs = 0):
@@ -237,4 +237,4 @@ class SRS830(Instrument):
     def rampDown(self,rampN = 200,ps = 0.05):
         assert self.auxOutPort != None, 'Output aux port not defined'
         auxOutPort = self.auxOutPort
-        self.rampV(0,rampN,ps)
+        self.rampV(0,10,ps)

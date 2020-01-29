@@ -1,6 +1,9 @@
 import numpy as np
 import os
+import pandas as pd
+import matplotlib.pyplot as plt
 from math import isclose
+
 import instruments as inst
 
 
@@ -12,8 +15,8 @@ class MixdownFreqSweep():
             fileName += str(round(self.instrList[-1-i].askVolt())) + ''
             fileName += str(self.instrList[-1-i].unit) + '_'
             fileName += str(self.instrList[-1-i].name) + '_'
-        fileName += str(self.sf) + 'MHz_' + str(self.ef) + 'MHz_'
-        return fileName+'FWD.csv', fileName+'BKW.csv'
+        #fileName += str(self.sf) + 'MHz_' + str(self.ef) + 'MHz_'
+        return fileName + str(self.sf) + 'MHz_' + str(self.ef) + 'MHz_'+'FWD.csv', fileName+ str(self.ef) + 'MHz_' + str(self.sf) + 'MHz_'+'BKW.csv'
 
     def runSweep(self):
 
@@ -28,7 +31,7 @@ class MixdownFreqSweep():
 
             outF = open(fwdData,"w")
             outF.write("f,A,P\n")
-            for i in np.arange(self.sf, self.ef + 1, self.df):
+            for i in np.arange(self.sf, self.ef + self.df, self.df):
                 self.instrList[1].setFreq(i)
                 self.instrList[0].setFreq(i)
                 A,P = self.liaInstr.readLIA()
@@ -38,7 +41,7 @@ class MixdownFreqSweep():
             if self.bkwSweep:
                 outB = open(bkwData,"w")
                 outB.write("f,A,P\n")
-                for i in np.arange(self.ef, self.sf - 1, - self.df):
+                for i in np.arange(self.ef, self.sf - self.df, - self.df):
                     self.instrList[1].setFreq(i)
                     self.instrList[0].setFreq(i)
                     A,P = self.liaInstr.readLIA()
@@ -61,6 +64,7 @@ class VoltageSweep(MixdownFreqSweep):
         self.dataLocation = dataLocation
         self.instrList = instrList
         self.liaInstr = liaInstr
+        self.liaInstr.sensitivity = 2
         self.instrList[0].freqOffSet = mx
         self.sf = instrList[0].freqSweepRange[0]
         self.ef = instrList[0].freqSweepRange[-1]
@@ -87,7 +91,7 @@ class VoltageSweep(MixdownFreqSweep):
         assert None not in voltage_ranges, "Please set voltage_ranges for all instrs"
         for i in range(len(self.instrList)):
             if self.instrList[i].askVolt() != voltage_ranges[i][0]:
-                self.instrList[i].rampV(voltage_ranges[i][0])
+                self.instrList[i].rampV(voltage_ranges[i][0],10)
 
 
     def generateSweepSpace(self):
@@ -126,35 +130,36 @@ class VoltageSweep(MixdownFreqSweep):
 class DispersionSweep(VoltageSweep):
 
     def __init__(self, paramDict):
-        vsAC = getattr(inst, paramDict['vsAC']['instClass'])(paramDict['vsAC']['address'])
-        vgAC = getattr(inst, paramDict['vgAC']['instClass'])(paramDict['vgAC']['address'])
-        vgDC = getattr(inst, paramDict['vgDC']['instClass'])(paramDict['vgDC']['address'])
+        vsAC = getattr(inst, paramDict['VsAC']['instClass'])(paramDict['VsAC']['address'])
+        vgAC = getattr(inst, paramDict['VgAC']['instClass'])(paramDict['VgAC']['address'])
+        vgDC = getattr(inst, paramDict['VgDC']['instClass'])(paramDict['VgDC']['address'])
         liA  = getattr(inst, paramDict['LIA']['instClass'])(paramDict['LIA']['address'],
                                                             paramDict['LIA']['timeConstant'])
-        if 'SRS' in paramDict['vgDC']['instClass']:
+        if 'SRS' in paramDict['VgDC']['instClass']:
             print('')
-            print('Using AUX OUT #{0} of {1} for vgDC'.format(paramDict['vgDC']['auxOutPort'],
-                                                               paramDict['vgDC']['instClass']))
+            print('Using AUX OUT #{0} of {1} for vgDC'.format(paramDict['VgDC']['auxOutPort'],
+                                                               paramDict['VgDC']['instClass']))
             vgDC.waitFor = paramDict['LIA']['timeConstant']
-            vgDC.auxOutPort = paramDict['vgDC']['auxOutPort']
+            vgDC.auxOutPort = paramDict['VgDC']['auxOutPort']
 
-        vsAC.name = 'VsAC'
-        vgAC.name = 'VgAC'
-        vgDC.name = 'VgDC'
-        vsAC.unit = 'mV'
-        vgAC.unit = 'mV'
-        vgDC.unit = 'V'
+        vsAC.name = paramDict['VsAC']['name']
+        vgAC.name = paramDict['VgAC']['name']
+        vgDC.name = paramDict['VgDC']['name']
+        vsAC.unit = paramDict['VsAC']['unit']
+        vgAC.unit = paramDict['VgAC']['unit']
+        vgDC.unit = paramDict['VgDC']['unit']
 
-        vsAC.voltageSweepRange = [paramDict['vsAC']['volt'],1.,paramDict['vsAC']['volt']]
-        vgAC.voltageSweepRange = [paramDict['vgAC']['volt'],1.,paramDict['vgAC']['volt']]
-        vgDC.voltageSweepRange = paramDict['vgDC']['sweepVolt']
-        vsAC.freqSweepRange = paramDict['vsAC']['freqRange']
-        vgAC.freqSweepRange = paramDict['vsAC']['freqRange']
+        vsAC.voltageSweepRange = [paramDict['VsAC']['volt'],1.,paramDict['VsAC']['volt']]
+        vgAC.voltageSweepRange = [paramDict['VgAC']['volt'],1.,paramDict['VgAC']['volt']]
+        vgDC.voltageSweepRange = paramDict['VgDC']['sweepVolt']
+        vsAC.freqSweepRange = paramDict['VsAC']['freqRange']
+        vgAC.freqSweepRange = paramDict['VsAC']['freqRange']
 
         dataLocation = paramDict['dataDir']
-        mx = paramDict['vsAC']['mixDownFreq']
+        mx = paramDict['VsAC']['mixDownFreq']
         VoltageSweep.__init__(self,dataLocation, [vsAC,vgAC,vgDC], liA, mx)
         self.sweepSummary()
+        self.paramDict = paramDict
 
     def runDispersion(self):
         self.setExperiment()
@@ -164,3 +169,32 @@ class DispersionSweep(VoltageSweep):
         print('')
         print('Dispersion Finished')
         self.rampDownAll()
+
+
+    def createImage(self):
+        sweep = self.paramDict['sweep']['type']
+        unit = self.paramDict['sweep']['unit']
+        freqSpan = self.paramDict['VsAC']['freqRange']
+        voltSpan = self.paramDict['VgDC']['sweepVolt']
+        x = []
+        x_ = list(np.arange(voltSpan[0],voltSpan[-1] + 2*voltSpan[1],voltSpan[1]))
+        y = list(np.arange(freqSpan[0],freqSpan[-1] + 2*freqSpan[1],freqSpan[1]))
+        Z_A = np.zeros((len(y)-1, len(x_)-1))
+        Z_P = np.zeros((len(y)-1, len(x_)-1))
+        index = 0
+        for file in os.listdir(self.dataLocation):
+            if file.endswith(".csv"):
+                x.append(float(file.split(sweep)[0].split(unit)[0]))
+                Z_A[:,index] = list(pd.read_csv(os.path.join(self.dataLocation,file))['A'])
+                Z_P[:,index] = list(pd.read_csv(os.path.join(self.dataLocation,file))['P'])
+                index += 1
+        x.append(x_[-1])
+        X,Y = np.meshgrid(x,y)
+        fig, (ax0, ax1) = plt.subplots(2, 1)
+        c = ax0.pcolor(X, Y, Z_A, cmap='RdBu')
+        fig.colorbar(c, ax=ax0)
+        c = ax1.pcolor(X, Y, Z_P, cmap='RdBu')
+        fig.colorbar(c, ax=ax1)
+        plt.show()
+
+        return X,Y,Z_P

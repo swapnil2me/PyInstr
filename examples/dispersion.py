@@ -5,20 +5,30 @@ sys.path.append(os.path.join(os.getcwd(),'lib'))
 import instruments as inst
 import experiments as expr
 
-paramDict = {'vsAC':{'instClass':'Anapico',
+paramDict = {'sweep':{'type':'VgDC',
+                      'unit':'V'},
+             'VsAC':{'instClass':'Anapico',
                      'address': '169.254.7.87',
+                     'name':'VsAC',
+                     'unit':'mV',
                      'volt':300,
                      'mixDownFreq':1987,
-                     'freqRange':[50.0,0.5,51]},
-             'vgAC':{'instClass':'Anapico',
+                     'freqRange':[50.0,0.1,51]},
+             'VgAC':{'instClass':'Anapico',
                      'address': '169.254.7.42',
+                     'name':'VgAC',
+                     'unit':'mV',
                      'volt':300},
-             'vgDC':{'instClass':'SRS830',
+             'VgDC':{'instClass':'SRS830',
                      'address':'8',
+                     'name':'VgDC',
+                     'unit':'V',
                      'auxOutPort':1,
-                     'sweepVolt':[0.0,2.0,2.0]},
+                     'sweepVolt':[0.0,2.0,6.0]},
              'LIA':{'instClass':'SRS830',
                      'address':'8',
+                     'name':'LIA',
+                     'unit':'NA',
                      'timeConstant':300},
                      'dataDir':'C:\\Users\\nemslab4\\Documents\\'
             }
@@ -27,6 +37,7 @@ try:
     dispersion = expr.DispersionSweep(paramDict)
     dispersion.runDispersion()
 except:
+    print('error')
     dispersion.closeAll()
 
 
@@ -34,3 +45,7 @@ dispersion.closeAll()
 print('')
 print('Experiment Closed')
 print('-----------------')
+X,Y,Z = dispersion.createImage()
+print(X)
+print(Y)
+print(Z)
