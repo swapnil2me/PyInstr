@@ -238,3 +238,39 @@ class SRS830(Instrument):
         assert self.auxOutPort != None, 'Output aux port not defined'
         auxOutPort = self.auxOutPort
         self.rampV(0,10,ps)
+
+
+class KT2461(Instrument):
+
+
+    def __init__(self, address):
+        Instrument.__init__(self, address)
+
+
+    def rampV(self, channel, setV, rampN = 200, ps = 0.05):
+        outV = self.readKT(channel,'v')
+        rampStep = (outV - setV)/float(rampN)
+        if rampStep == 0.0:
+            print('{0} at {1} {2}'.format(self.name, setV, self.unit))
+            return
+        print('Ramping {0} to {1} {2} in {3} steps'.format(self.name, setV, self.unit, rampN))
+        for i in range(1,rampN+1):
+            increment = (outV - i*rampStep) # in Volts
+            self._instR.write('smu{}.source.levelv={}'.format(channel,increment))
+            time.sleep(ps)
+
+
+    def readKT(self, channel, read):
+        """
+        read Voltage ('v') has unit of Volts
+        read Current ('i') has unit of Amps
+        read Resistance ('r') has unit of Ohms
+        """
+        self._instR.write('funC=smu{}.measure.{}()'.format(channel,read))
+        self._instR.write('print(funC)')
+        value = float(self._instR.read())
+        return value
+
+
+    def rampDown(self, channel, rampN = 200, ps = 0.05):
+        self.rampV(channel, 0.0, rampN, ps)

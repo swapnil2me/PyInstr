@@ -198,3 +198,36 @@ class DispersionSweep(VoltageSweep):
         plt.show()
 
         return X,Y,Z_P
+
+
+class Rvg():
+    """This implementation of RVG is for KT2461"""
+
+    def __init__(self, paramDict):
+
+        self.smuInst = inst.KT2461(paramDict['address'])
+        self.sourceChannel = paramDict['source_channel']
+        self.sourceVolt = paramDict['sourceVolt']
+        self.gateChannel = paramDict['gate_channel']
+        self.gateSweep = paramDict['gateSweep']
+        self.dataLocation = paramDict['dataLocation']
+
+
+    def setExperiment(self):
+        self.smuInst.rampV(self.sourceChannel, self.sourceVolt)
+        self.smuInst.rampV(self.gateChannel, self.gateSweep[0])
+
+
+    def startExperiment(self):
+        Vg = np.arange(self.gateSweep[0], self.gateSweep[-1]+self.gateSweep[1], self.gateSweep[1])
+        R = np.zeros(Vg.shape)
+        for i,v in enumerate(Vg):
+            self.smuInst.rampV(self.gateChannel, v, 10, 0.1)
+            R[i] = self.smuInst.readKT(self.sourceChannel, 'r')
+        return Vg, R
+
+
+    def closeExperiment(self):
+        self.smuInst.rampDown(self.sourceChannel,10)
+        self.smuInst.rampDown(self.gateChannel,10)
+        self.smuInst.close()
