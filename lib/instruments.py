@@ -240,6 +240,50 @@ class SRS830(Instrument):
         self.rampV(0,10,ps)
 
 
+class SRS844(SRS830):
+    """docstring for SRS844."""
+
+    def __init__(self, address, waitFor=300, auxOutPort=None):
+        SRS830.__init__(self, address, waitFor, auxOutPort)
+
+
+    def readLIA(self):
+        time.sleep(self.waitFor/1000)
+        return list(map(float,(self._instR.query('SNAP?3, 5').split(','))))
+
+
+    def askVolt(self):
+        assert self.auxOutPort != None, 'Output aux port not defined'
+        auxOutPort = self.auxOutPort
+        return float(self._instR.query('AUXO?{}\n'.format(auxOutPort))) #in Volts
+
+
+    def rampV(self, setV, rampN = 200,ps = 0.05):
+        """
+        setV is in Volts
+        """
+        assert self.auxOutPort != None, 'Output aux port not defined'
+        auxOutPort = self.auxOutPort
+        #print('Using Aux Port {}'.format(auxOutPort))
+        outV = float(self._instR.query('AUXO?{}\n'.format(auxOutPort))) #in Volts
+        rampStep = (outV - setV)/float(rampN)
+        if rampStep == 0.0:
+            print('{0} at {1} {2}'.format(self.name, setV, self.unit))
+            return
+        print('Ramping {0} to {1} {2} in {3} steps'.format(self.name, setV, self.unit, rampN))
+        for i in range(1,rampN+1):
+            increment = (outV - i*rampStep) # in Volts
+            self._instR.write("AUXO{0:d},{1:.8f}\n".format(auxOutPort,increment))
+            time.sleep(ps)
+        outV = float(self._instR.query('AUXO?{}\n'.format(auxOutPort))) #in Volts
+        if isclose(outV, setV, rel_tol = 1e-3):
+            print('Correcting Output')
+            self._instR.write("AUXO{0:d},{1:.8f}\n".format(auxOutPort,setV))
+        else:
+            print(outV, setV)
+            print('Actual output is off by 1e-3 V')
+
+
 class KT2461(Instrument):
 
 
