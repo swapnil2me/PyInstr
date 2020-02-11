@@ -11,12 +11,14 @@ class MixdownFreqSweep():
 
     def generateName(self):
         fileName = ''
+        fileNameDict = {}
         for i in range(len(self.instrList)):
-            fileName += str(round(self.instrList[-1-i].askVolt())) + ''
+            voltNow = round(self.instrList[-1-i].askVolt())
+            fileName += str(voltNow) + ''
             fileName += str(self.instrList[-1-i].unit) + '_'
             fileName += str(self.instrList[-1-i].name) + '_'
-        #fileName += str(self.sf) + 'MHz_' + str(self.ef) + 'MHz_'
-        return fileName + str(self.sf) + 'MHz_' + str(self.ef) + 'MHz_'+'FWD.csv', fileName+ str(self.ef) + 'MHz_' + str(self.sf) + 'MHz_'+'BKW.csv'
+            fileNameDict[self.instrList[-1-i].name] = [voltNow,self.instrList[-1-i].unit]
+        return fileName + str(self.sf) + 'MHz_' + str(self.ef) + 'MHz_'+'FWD.csv', fileName+ str(self.ef) + 'MHz_' + str(self.sf) + 'MHz_'+'BKW.csv', fileNameDict
 
     def runSweep(self):
 
@@ -28,20 +30,29 @@ class MixdownFreqSweep():
 
             fwdData=os.path.join(self.dataLocation,dataFile_name[0])
             bkwData=os.path.join(self.dataLocation,dataFile_name[1])
+            freqArray = np.arange(self.sf, self.ef + self.df, self.df)
 
+            fileNameDict = dataFile_name[2]
+            commonColumns = ['f','A','P','direction']
+            columns = [key+'('+val[1]+')' for key,val in fileNameDict.items()] + commonColumns
+            voltArray = [val[0] for val in fileNameDict.values()]
+            data = np.zeros((len(freqArray),len(columns)+len(commonColumns)))
             outF = open(fwdData,"w")
             outF.write("f,A,P\n")
-            for i in np.arange(self.sf, self.ef + self.df, self.df):
+            for k,i in enumerate(freqArray):
                 self.instrList[1].setFreq(i)
                 self.instrList[0].setFreq(i)
                 A,P = self.liaInstr.readLIA()
+                data[k]= voltArray + [i,A,P,1]
                 outF.write(("{0:5.5f},{1:8.8f},{2:8.8f}\n").format(i,A,P))
+            df=pd.DataFrame(data,columns=columns)
             outF.close()
 
             if self.bkwSweep:
+                freqArray = np.arange(self.ef, self.sf - self.df, - self.df)
                 outB = open(bkwData,"w")
                 outB.write("f,A,P\n")
-                for i in np.arange(self.ef, self.sf - self.df, - self.df):
+                for i in freqArray:
                     self.instrList[1].setFreq(i)
                     self.instrList[0].setFreq(i)
                     A,P = self.liaInstr.readLIA()
@@ -123,7 +134,7 @@ class VoltageSweep(MixdownFreqSweep):
 
     def closeAll(self):
         for i in range(len(self.instrList)):
-            self.instrList[i].rampV(0)
+            self.instrList[i].rampV(0,rampN = 10)
             self.instrList[i].close()
 
 
