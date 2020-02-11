@@ -5,7 +5,8 @@ sys.path.append(os.path.join(os.getcwd(),'lib'))
 import instruments as inst
 import experiments as expr
 
-paramDict = {'sweep':{'type':'VgDC',
+paramDict = {'experintName':'Dispersion',
+            'sweep':{'type':'VgDC',
                       'unit':'V'},
              'VsAC':{'instClass':'Anapico',
                      'address': '169.254.7.87',
@@ -19,33 +20,33 @@ paramDict = {'sweep':{'type':'VgDC',
                      'name':'VgAC',
                      'unit':'mV',
                      'volt':300},
-             'VgDC':{'instClass':'SRS844',
+             'VgDC':{'instClass':'SRS830',
                      'address':'8',
                      'name':'VgDC',
                      'unit':'V',
                      'auxOutPort':1,
-                     'sweepVolt':[0.0,0.5,10.0]},
-             'LIA':{'instClass':'SRS844',
+                     'sweepVolt':[0.0,0.5,2.0]},
+             'LIA':{'instClass':'SRS830',
                      'address':'8',
                      'name':'LIA',
                      'unit':'NA',
                      'timeConstant':300},
-                     'dataDir':'E:\\Swapnil\\temp'
+                     'dataDir':'C:/Users/nemslab4/Documents/'
             }
 
 try:
     dispersion = expr.DispersionSweep(paramDict)
-    dispersion.runDispersion()
+    #dispersion.runDispersion()
 except:
     print('error')
     dispersion.closeAll()
 
 
-dispersion.closeAll()
+#dispersion.closeAll()
 print('')
 print('Experiment Closed')
 print('-----------------')
-X,Y,Z = dispersion.createImage()
-print(X)
-print(Y)
-print(Z)
+#X,Y,Z = dispersion.createImage()
+#print(X)
+#print(Y)
+#print(Z)

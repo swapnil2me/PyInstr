@@ -10,7 +10,7 @@ paramDict = {'address':'169.254.0.1',
              'sourceVolt':0.1,
              'gate_channel':'b',
              'gateSweep':[1,1,10],
-             'dataLocation':'C:\\Users\\nemslab4\\Documents\\'}
+             'dataLocation':'C:/Users/nemslab4/Documents/'}
 
 rvg = expr.Rvg(paramDict)
 rvg.setExperiment()

@@ -1,8 +1,13 @@
-import numpy as np
 import os
+import datetime
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+
 from math import isclose
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Float, Boolean, PickleType
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 
 import instruments as inst
 
@@ -13,12 +18,13 @@ class MixdownFreqSweep():
         fileName = ''
         fileNameDict = {}
         for i in range(len(self.instrList)):
-            voltNow = round(self.instrList[-1-i].askVolt())
+            voltNow = self.instrList[-1-i].askVolt()
             fileName += str(voltNow) + ''
             fileName += str(self.instrList[-1-i].unit) + '_'
             fileName += str(self.instrList[-1-i].name) + '_'
             fileNameDict[self.instrList[-1-i].name] = [voltNow,self.instrList[-1-i].unit]
         return fileName + str(self.sf) + 'MHz_' + str(self.ef) + 'MHz_'+'FWD.csv', fileName+ str(self.ef) + 'MHz_' + str(self.sf) + 'MHz_'+'BKW.csv', fileNameDict
+
 
     def runSweep(self):
 
@@ -28,36 +34,40 @@ class MixdownFreqSweep():
             if not os.path.exists(self.dataLocation):
                 os.makedirs(self.dataLocation)
 
-            fwdData=os.path.join(self.dataLocation,dataFile_name[0])
-            bkwData=os.path.join(self.dataLocation,dataFile_name[1])
+            fwdFile=os.path.join(self.dataLocation,dataFile_name[0])
+            bkwFile=os.path.join(self.dataLocation,dataFile_name[1])
+            fileNameDict = dataFile_name[2]
+            print("---------------XXXXX---------------")
+            print(fileNameDict)
+            print(fwdFile)
+            print(bkwFile)
+            print("---------------XXXXX---------------")
             freqArray = np.arange(self.sf, self.ef + self.df, self.df)
 
-            fileNameDict = dataFile_name[2]
             commonColumns = ['f','A','P','direction']
             columns = [key+'('+val[1]+')' for key,val in fileNameDict.items()] + commonColumns
             voltArray = [val[0] for val in fileNameDict.values()]
-            data = np.zeros((len(freqArray),len(columns)+len(commonColumns)))
-            outF = open(fwdData,"w")
-            outF.write("f,A,P\n")
-            for k,i in enumerate(freqArray):
-                self.instrList[1].setFreq(i)
-                self.instrList[0].setFreq(i)
+            dataF = np.zeros((len(freqArray),len(columns)))
+
+            for i,freq in enumerate(freqArray):
+                self.instrList[1].setFreq(freq)
+                self.instrList[0].setFreq(freq)
                 A,P = self.liaInstr.readLIA()
-                data[k]= voltArray + [i,A,P,1]
-                outF.write(("{0:5.5f},{1:8.8f},{2:8.8f}\n").format(i,A,P))
-            df=pd.DataFrame(data,columns=columns)
-            outF.close()
+                dataF[i]= voltArray + [freq,A,P,1]
+
+            pd.DataFrame(dataF,columns=columns).to_csv(fwdFile,index=None)
 
             if self.bkwSweep:
                 freqArray = np.arange(self.ef, self.sf - self.df, - self.df)
-                outB = open(bkwData,"w")
-                outB.write("f,A,P\n")
-                for i in freqArray:
-                    self.instrList[1].setFreq(i)
-                    self.instrList[0].setFreq(i)
+                dataB = np.zeros((len(freqArray),len(columns)))
+                for i,freq in enumerate(freqArray):
+                    self.instrList[1].setFreq(freq)
+                    self.instrList[0].setFreq(freq)
                     A,P = self.liaInstr.readLIA()
-                    outB.write(("{0:5.5f},{1:8.8f},{2:8.8f}\n").format(i,A,P))
-                outB.close()
+                    dataB[i]= voltArray + [freq,A,P,-1]
+
+                pd.DataFrame(dataB,columns=columns).to_csv(bkwFile,index=None)
+
 
         except AttributeError as arrtErr:
             print(arrtErr)
@@ -172,6 +182,15 @@ class DispersionSweep(VoltageSweep):
         self.sweepSummary()
         self.paramDict = paramDict
 
+        #database engine
+        _,_,fileNameDict = self.generateName()
+        commonColumns = ['f','A','P','direction']
+        columns = [key+'('+val[1]+')' for key,val in fileNameDict.items()] + commonColumns
+        print(columns)
+
+
+
+
     def runDispersion(self):
         self.setExperiment()
         print('')
@@ -194,13 +213,19 @@ class DispersionSweep(VoltageSweep):
         Z_P = np.zeros((len(y)-1, len(x_)-1))
         index = 0
         for file in os.listdir(self.dataLocation):
-            if file.endswith(".csv"):
+            if file.endswith("FWD.csv"):
+                print(index)
                 x.append(float(file.split(sweep)[0].split(unit)[0]))
                 Z_A[:,index] = list(pd.read_csv(os.path.join(self.dataLocation,file))['A'])
                 Z_P[:,index] = list(pd.read_csv(os.path.join(self.dataLocation,file))['P'])
                 index += 1
         x.append(x_[-1])
+        print(x)
+        print(x_)
         X,Y = np.meshgrid(x,y)
+        print(X.shape)
+        print(Y.shape)
+        print(Z_A.shape)
         fig, (ax0, ax1) = plt.subplots(2, 1)
         c = ax0.pcolor(X, Y, Z_A, cmap='RdBu')
         fig.colorbar(c, ax=ax0)
