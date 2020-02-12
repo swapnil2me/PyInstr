@@ -1,5 +1,5 @@
 import os
-import datetime
+from datetime import datetime as dt
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -40,31 +40,38 @@ class MixdownFreqSweep():
             print("---------------XXXXX---------------")
             print(fileNameDict)
             print(fwdFile)
-            print(bkwFile)
             print("---------------XXXXX---------------")
-            freqArray = np.arange(self.sf, self.ef + self.df, self.df)
+            freqArray = np.arange(self.sf, self.ef + self.df/2, self.df)
 
             commonColumns = ['f','A','P','direction']
             columns = [key+'('+val[1]+')' for key,val in fileNameDict.items()] + commonColumns
             voltArray = [val[0] for val in fileNameDict.values()]
             dataF = np.zeros((len(freqArray),len(columns)))
-
+            dataDB = pd.DataFrame(columns=columns+['timeStamp'])
             for i,freq in enumerate(freqArray):
                 self.instrList[1].setFreq(freq)
                 self.instrList[0].setFreq(freq)
                 A,P = self.liaInstr.readLIA()
                 dataF[i]= voltArray + [freq,A,P,1]
+                dataDB.loc[0] = voltArray + [freq,A,P,1,dt.now()]
+                dataDB.to_sql(self.paramDict['experintName'], con=self.dbEngine, if_exists='append',index=False)
 
             pd.DataFrame(dataF,columns=columns).to_csv(fwdFile,index=None)
 
             if self.bkwSweep:
-                freqArray = np.arange(self.ef, self.sf - self.df, - self.df)
+                freqArray = freqArray[::-1]
                 dataB = np.zeros((len(freqArray),len(columns)))
+                print("---------------XXXXX---------------")
+                print(fileNameDict)
+                print(bkwFile)
+                print("---------------XXXXX---------------")
                 for i,freq in enumerate(freqArray):
                     self.instrList[1].setFreq(freq)
                     self.instrList[0].setFreq(freq)
                     A,P = self.liaInstr.readLIA()
                     dataB[i]= voltArray + [freq,A,P,-1]
+                    dataDB.loc[0] = voltArray + [freq,A,P,-1,dt.now()]
+                    dataDB.to_sql(self.paramDict['experintName'], con=self.dbEngine, if_exists='append',index=False)
 
                 pd.DataFrame(dataB,columns=columns).to_csv(bkwFile,index=None)
 
@@ -81,7 +88,7 @@ class MixdownFreqSweep():
 
 class VoltageSweep(MixdownFreqSweep):
 
-    def __init__(self, dataLocation, instrList, liaInstr, mx, bkwSweep = False):
+    def __init__(self, dataLocation, instrList, liaInstr, mx, bkwSweep = None):
         self.dataLocation = dataLocation
         self.instrList = instrList
         self.liaInstr = liaInstr
@@ -177,18 +184,12 @@ class DispersionSweep(VoltageSweep):
         vgAC.freqSweepRange = paramDict['VsAC']['freqRange']
 
         dataLocation = paramDict['dataDir']
+        bkwSweep = paramDict.get('backSweep')
         mx = paramDict['VsAC']['mixDownFreq']
-        VoltageSweep.__init__(self,dataLocation, [vsAC,vgAC,vgDC], liA, mx)
+        VoltageSweep.__init__(self,dataLocation, [vsAC,vgAC,vgDC], liA, mx,bkwSweep)
         self.sweepSummary()
         self.paramDict = paramDict
-
-        #database engine
-        _,_,fileNameDict = self.generateName()
-        commonColumns = ['f','A','P','direction']
-        columns = [key+'('+val[1]+')' for key,val in fileNameDict.items()] + commonColumns
-        print(columns)
-
-
+        self.dbEngine = create_engine('sqlite:///'+os.path.join(self.dataLocation, 'experiments.db'), echo=False)
 
 
     def runDispersion(self):
@@ -212,28 +213,24 @@ class DispersionSweep(VoltageSweep):
         Z_A = np.zeros((len(y)-1, len(x_)-1))
         Z_P = np.zeros((len(y)-1, len(x_)-1))
         index = 0
+
         for file in os.listdir(self.dataLocation):
             if file.endswith("FWD.csv"):
-                print(index)
                 x.append(float(file.split(sweep)[0].split(unit)[0]))
                 Z_A[:,index] = list(pd.read_csv(os.path.join(self.dataLocation,file))['A'])
                 Z_P[:,index] = list(pd.read_csv(os.path.join(self.dataLocation,file))['P'])
                 index += 1
+
         x.append(x_[-1])
-        print(x)
-        print(x_)
         X,Y = np.meshgrid(x,y)
-        print(X.shape)
-        print(Y.shape)
-        print(Z_A.shape)
-        fig, (ax0, ax1) = plt.subplots(2, 1)
+        fig, (ax0, ax1) = plt.subplots(2    , 1)
         c = ax0.pcolor(X, Y, Z_A, cmap='RdBu')
         fig.colorbar(c, ax=ax0)
         c = ax1.pcolor(X, Y, Z_P, cmap='RdBu')
         fig.colorbar(c, ax=ax1)
         plt.show()
 
-        return X,Y,Z_P
+        return None
 
 
 class Rvg():

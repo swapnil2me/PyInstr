@@ -31,12 +31,13 @@ paramDict = {'experintName':'Dispersion',
                      'name':'LIA',
                      'unit':'NA',
                      'timeConstant':300},
-                     'dataDir':'C:/Users/nemslab4/Documents/'
+            'backSweep':True,
+            'dataDir':'C:/Users/nemslab4/Documents/'
             }
-
+dispersion = expr.DispersionSweep(paramDict)
 try:
     dispersion = expr.DispersionSweep(paramDict)
-    #dispersion.runDispersion()
+    dispersion.runDispersion()
 except:
     print('error')
     dispersion.closeAll()
@@ -46,7 +47,7 @@ except:
 print('')
 print('Experiment Closed')
 print('-----------------')
-#X,Y,Z = dispersion.createImage()
+dispersion.createImage()
 #print(X)
 #print(Y)
 #print(Z)
