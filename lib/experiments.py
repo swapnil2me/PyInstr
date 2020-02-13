@@ -52,8 +52,8 @@ class MixdownFreqSweep():
                 self.instrList[1].setFreq(freq)
                 self.instrList[0].setFreq(freq)
                 A,P = self.liaInstr.readLIA()
-                dataF[i]= voltArray + [freq,A,P,1]
-                dataDB.loc[0] = voltArray + [freq,A,P,1,dt.now()]
+                dataF[i]= voltArray + [freq,A*1e9,P,1]
+                dataDB.loc[0] = voltArray + [freq,A*1e9,P,1,dt.now()]
                 dataDB.to_sql(self.paramDict['experintName'], con=self.dbEngine, if_exists='append',index=False)
 
             pd.DataFrame(dataF,columns=columns).to_csv(fwdFile,index=None)
@@ -69,8 +69,8 @@ class MixdownFreqSweep():
                     self.instrList[1].setFreq(freq)
                     self.instrList[0].setFreq(freq)
                     A,P = self.liaInstr.readLIA()
-                    dataB[i]= voltArray + [freq,A,P,-1]
-                    dataDB.loc[0] = voltArray + [freq,A,P,-1,dt.now()]
+                    dataB[i]= voltArray + [freq,A*1e9,P,-1]
+                    dataDB.loc[0] = voltArray + [freq,A*1e9,P,-1,dt.now()]
                     dataDB.to_sql(self.paramDict['experintName'], con=self.dbEngine, if_exists='append',index=False)
 
                 pd.DataFrame(dataB,columns=columns).to_csv(bkwFile,index=None)
