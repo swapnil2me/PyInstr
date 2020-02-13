@@ -30,7 +30,7 @@ paramDict = {'experintName':'Dispersion',
                      'address':'8',
                      'name':'LIA',
                      'unit':'NA',
-                     'timeConstant':300},
+                     'timeConstant':100},
             'backSweep':True,
             'dataDir':'C:/Users/nemslab4/Documents/'
             }

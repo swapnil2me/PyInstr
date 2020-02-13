@@ -92,7 +92,7 @@ class VoltageSweep(MixdownFreqSweep):
         self.dataLocation = dataLocation
         self.instrList = instrList
         self.liaInstr = liaInstr
-        self.liaInstr.sensitivity = 2
+        self.liaInstr.sensitivity = 12
         self.instrList[0].freqOffSet = mx
         self.sf = instrList[0].freqSweepRange[0]
         self.ef = instrList[0].freqSweepRange[-1]
