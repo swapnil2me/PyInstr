@@ -19,10 +19,11 @@ class MixdownFreqSweep():
         fileNameDict = {}
         for i in range(len(self.instrList)):
             voltNow = self.instrList[-1-i].askVolt()
-            fileName += str(voltNow) + ''
+            voltToDev = np.round(np.divide( np.power(10, np.divide( np.multiply(10, np.log10(20)) + np.multiply(20, np.log10(voltNow)) - 10 - self.instrList[-1-i].cableLoss , 20 )) , np.sqrt(2)),3)
+            fileName += str(voltToDev) + ''
             fileName += str(self.instrList[-1-i].unit) + '_'
             fileName += str(self.instrList[-1-i].name) + '_'
-            fileNameDict[self.instrList[-1-i].name] = [voltNow,self.instrList[-1-i].unit]
+            fileNameDict[self.instrList[-1-i].name] = [voltToDev,self.instrList[-1-i].unit]
         return fileName + str(self.sf) + 'MHz_' + str(self.ef) + 'MHz_'+'FWD.csv', fileName+ str(self.ef) + 'MHz_' + str(self.sf) + 'MHz_'+'BKW.csv', fileNameDict
 
 
@@ -158,8 +159,8 @@ class VoltageSweep(MixdownFreqSweep):
 class DispersionSweep(VoltageSweep):
 
     def __init__(self, paramDict):
-        vsAC = getattr(inst, paramDict['VsAC']['instClass'])(paramDict['VsAC']['address'])
-        vgAC = getattr(inst, paramDict['VgAC']['instClass'])(paramDict['VgAC']['address'])
+        vsAC = getattr(inst, paramDict['VsAC']['instClass'])(paramDict['VsAC']['address'], paramDict['VsAC']['cableLoss'])
+        vgAC = getattr(inst, paramDict['VgAC']['instClass'])(paramDict['VgAC']['address'], paramDict['VsAC']['cableLoss'])
         vgDC = getattr(inst, paramDict['VgDC']['instClass'])(paramDict['VgDC']['address'])
         liA  = getattr(inst, paramDict['LIA']['instClass'])(paramDict['LIA']['address'],
                                                             paramDict['LIA']['timeConstant'])

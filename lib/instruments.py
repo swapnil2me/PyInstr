@@ -5,7 +5,7 @@ from math import isclose
 
 class Instrument:
 
-    def __init__(self,address,name = None,unit = None, freqOffSet = 0.0):
+    def __init__(self,address, cableLoss = 0,name = None,unit = None, freqOffSet = 0.0):
         self.address = address
         self.name = name
         self.unit = unit
@@ -14,6 +14,7 @@ class Instrument:
         self._voltageSweepRange = None
         self._freqSweepRange = None
         self.maxVoltage = 1000 # miliVolts
+        self.cableLoss = cableLoss
 
 
     @property
