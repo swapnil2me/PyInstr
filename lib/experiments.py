@@ -239,29 +239,58 @@ class Rvg():
 
     def __init__(self, paramDict):
 
-        self.smuInst = inst.KT2461(paramDict['address'])
+        self.smuInst = getattr(inst, paramDict['instClass'])(paramDict['address'],
+                                                            name=paramDict['instClass'])
         self.sourceChannel = paramDict['source_channel']
         self.sourceVolt = paramDict['sourceVolt']
         self.gateChannel = paramDict['gate_channel']
         self.gateSweep = paramDict['gateSweep']
         self.dataLocation = paramDict['dataLocation']
+        self.dbEngine = create_engine('sqlite:///'+os.path.join(self.dataLocation, 'experiments.db'), echo=False)
+        self.paramDict = paramDict
 
 
     def setExperiment(self):
-        self.smuInst.rampV(self.sourceChannel, self.sourceVolt)
-        self.smuInst.rampV(self.gateChannel, self.gateSweep[0])
+        self.smuInst.rampV(self.sourceChannel, self.sourceVolt,100)
+        print("source is at set voltage")
+        #self.smuInst.rampV(self.gateChannel, self.gateSweep[0],10)
+
+    def voltageLoop(self):
+        low = self.gateSweep[0]
+        high = self.gateSweep[-1]
+        step = self.gateSweep[1]
+        return list(np.arange(0,low-step/2,-step)) + list(np.arange(low+step,high+step/2,step)) + list(np.arange(high-step,0-step/2,-step))
 
 
-    def startExperiment(self):
-        Vg = np.arange(self.gateSweep[0], self.gateSweep[-1]+self.gateSweep[1], self.gateSweep[1])
-        R = np.zeros(Vg.shape)
+    def startExperiment(self,saveData=True):
+        Vg = self.voltageLoop()
+        data = np.zeros((len(Vg),7))
+        timeStamp = {'timeStamp':[]}
+        fileName = 'RVG_Vg_{}_{}_V_Vsd_{}_mV_{}.csv'.format(min(Vg),
+                                                            max(Vg),
+                                                            self.sourceVolt*1000,
+                                                            dt.now().strftime("%H-%M-%S"))
         for i,v in enumerate(Vg):
-            self.smuInst.rampV(self.gateChannel, v, 10, 0.1)
-            R[i] = self.smuInst.readKT(self.sourceChannel, 'r')
-        return Vg, R
+            self.smuInst.rampV(self.gateChannel, v, 5, 0.1,verbose = False)
+            data[i,0] = v
+            data[i,1] = self.smuInst.readKT(self.sourceChannel, 'r') # Rsd Ohm
+            data[i,2] = np.round(self.smuInst.readKT(self.gateChannel, 'r')*1e-9,2) # Rox or Rg GigaOhm
+            data[i,3] = np.round(self.smuInst.readKT(self.sourceChannel, 'v')*1e3,2) # Vs mV
+            data[i,4] = np.round(self.smuInst.readKT(self.sourceChannel, 'i')*1e6,2) # Is uAmp
+            data[i,5] = np.round(self.smuInst.readKT(self.gateChannel, 'v'),2) # Vg V
+            data[i,6] = np.round(self.smuInst.readKT(self.gateChannel, 'i')*1e6,2) # Ig uAmp
+            #print('Vg: {0:2.2f} V, Rsd: {1:.2f} Ohm, Rox: {2:.2f} gigaOhm'.format(data[i,0],data[i,1],data[i,2]))
+            timeStamp['timeStamp'].append(dt.now())
+
+        dataDB = pd.DataFrame(data,columns=['Vg(V).set','Rsd(Ohm)','Rg(GigaOhm)','Vs(mV)','Is(uAmp)','Vg(V).get','Ig(uAmp)'])
+        dataDB = pd.concat([dataDB, pd.DataFrame(timeStamp)],axis=1)
+        if saveData:
+            dataDB.to_sql(self.paramDict['experintName'], con=self.dbEngine, if_exists='append',index=False)
+            dataDB.to_csv(os.path.join(self.dataLocation,fileName),index=None)
+        return (dataDB,fileName)
 
 
     def closeExperiment(self):
-        self.smuInst.rampDown(self.sourceChannel,10)
-        self.smuInst.rampDown(self.gateChannel,10)
+        self.smuInst.rampDown(self.sourceChannel,100)
+        self.smuInst.rampDown(self.gateChannel,100)
         self.smuInst.close()

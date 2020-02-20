@@ -288,17 +288,18 @@ class SRS844(SRS830):
 class KT2461(Instrument):
 
 
-    def __init__(self, address):
-        Instrument.__init__(self, address)
+    def __init__(self, address,name=None):
+        Instrument.__init__(self, address, name=name)
 
 
-    def rampV(self, channel, setV, rampN = 200, ps = 0.05):
+    def rampV(self, channel, setV, rampN = 200, ps = 0.05, verbose = True):
         outV = self.readKT(channel,'v')
         rampStep = (outV - setV)/float(rampN)
         if rampStep == 0.0:
             print('{0} at {1} {2}'.format(self.name, setV, self.unit))
             return
-        print('Ramping {0} to {1} {2} in {3} steps'.format(self.name, setV, self.unit, rampN))
+        if verbose:
+            print('Ramping {0} to {1} {2} in {3} steps'.format(self.name, setV, self.unit, rampN))
         for i in range(1,rampN+1):
             increment = (outV - i*rampStep) # in Volts
             self._instR.write('smu{}.source.levelv={}'.format(channel,increment))
