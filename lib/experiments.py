@@ -237,7 +237,7 @@ class DispersionSweep(VoltageSweep):
 class Rvg():
     """This implementation of RVG is for KT2461"""
 
-    def __init__(self, paramDict):
+    def __init__(self, paramDict,verbose = False):
 
         self.smuInst = getattr(inst, paramDict['instClass'])(paramDict['address'],
                                                             name=paramDict['instClass'])
@@ -246,13 +246,17 @@ class Rvg():
         self.gateChannel = paramDict['gate_channel']
         self.gateSweep = paramDict['gateSweep']
         self.dataLocation = paramDict['dataLocation']
+        if not os.path.exists(self.dataLocation):
+            os.makedirs(self.dataLocation)
+            print("Directory Created: {}".format(self.dataLocation))
         self.dbEngine = create_engine('sqlite:///'+os.path.join(self.dataLocation, 'experiments.db'), echo=False)
         self.paramDict = paramDict
+        self.verbose = verbose
 
 
     def setExperiment(self):
-        self.smuInst.rampV(self.sourceChannel, self.sourceVolt,100)
-        print("source is at set voltage")
+        self.smuInst.rampV(self.sourceChannel, self.sourceVolt,5,verbose = self.verbose)
+        #print("source is at set voltage")
         #self.smuInst.rampV(self.gateChannel, self.gateSweep[0],10)
 
     def voltageLoop(self):
@@ -271,7 +275,7 @@ class Rvg():
                                                             self.sourceVolt*1000,
                                                             dt.now().strftime("%H-%M-%S"))
         for i,v in enumerate(Vg):
-            self.smuInst.rampV(self.gateChannel, v, 5, 0.1,verbose = False)
+            self.smuInst.rampV(self.gateChannel, v, 1, 0.05,verbose = self.verbose)
             data[i,0] = v
             data[i,1] = self.smuInst.readKT(self.sourceChannel, 'r') # Rsd Ohm
             data[i,2] = np.round(self.smuInst.readKT(self.gateChannel, 'r')*1e-9,2) # Rox or Rg GigaOhm
