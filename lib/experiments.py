@@ -318,8 +318,6 @@ class CurrentAnneal(Rvg):
 
 
     def startExperiment(self,saveData=True):
-        Vg = self.voltageLoop()
-        data = np.zeros((len(Vg),7))
         fileName = 'RVG_Vg_{}_{}_V_Vsd_{}_mV_{}.csv'.format(min(Vg),
                                                             max(Vg),
                                                             self.sourceVolt*1000,
