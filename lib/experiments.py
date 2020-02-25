@@ -274,7 +274,7 @@ class Rvg():
                                                             max(Vg),
                                                             self.sourceVolt*1000,
                                                             dt.now().strftime("%H-%M-%S"))
-        data = np.zeros(len(Vg),dtype='f8,f8,f8,f8,f8,f8,datetime64[us]')
+        data = np.zeros(len(Vg),dtype='f8,f8,f8,f8,f8,f8,f8,datetime64[us]')
         columns=['Vg(V).set','Rsd(Ohm)','Rg(GigaOhm)','Vs(mV)','Is(uAmp)','Vg(V)','Ig(uAmp)','timeStamp']
         data.dtype.names=columns
         for i,v in enumerate(Vg):
@@ -307,23 +307,22 @@ class CurrentAnneal(Rvg):
 
     def __init__(self, paramDict,verbose = False):
 
-        Rvg.__init__(paramDict,verbose)
+        Rvg.__init__(self,paramDict=paramDict,verbose=verbose)
         self.gateVolt = paramDict.get('gateVolt')
         self.dataPoints = paramDict.get('dataPoints')
 
 
     def setExperiment(self):
         self.smuInst.rampV(self.sourceChannel, self.sourceVolt,5,verbose = self.verbose)
-        self.smuInst.rampV(self.sourceChannel, self.gateVolt,5,verbose = self.verbose)
+        self.smuInst.rampV(self.gateChannel, self.gateVolt,5,verbose = self.verbose)
 
 
     def startExperiment(self,saveData=True):
-        fileName = 'RVG_Vg_{}_{}_V_Vsd_{}_mV_{}.csv'.format(min(Vg),
-                                                            max(Vg),
+        fileName = 'RVG_Vg_{}_V_Vsd_{}_mV_{}.csv'.format(self.gateVolt,
                                                             self.sourceVolt*1000,
                                                             dt.now().strftime("%H-%M-%S"))
-        data2csv = np.zeros(len(range(10)),dtype='f8,f8,f8,f8,f8,f8,datetime64[us]')
-        columns=['Rsd(Ohm)','Rg(GigaOhm)','Vs(mV)','Is(uAmp)','Vg(V)','Ig(uAmp)','timeStamp']
+        data2csv = np.zeros(self.dataPoints,dtype='f8,f8,f8,f8,f8,f8,datetime64[us]')
+        columns=['Rsd_Ohm','Rg(GigaOhm)','Vs(mV)','Is(uAmp)','Vg(V)','Ig(uAmp)','timeStamp']
         data2csv.dtype.names=columns
         for i in range(self.dataPoints):
             Rsd = self.smuInst.readKT(self.sourceChannel, 'r') # Rsd Ohm
